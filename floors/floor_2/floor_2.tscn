@@ -6,3 +6,4 @@
 script = ExtResource("1_floor")
 
 [node name="EntryPoint" type="Marker2D" parent="."]
+position = Vector2(-780, 120)

@@ -1,8 +1,23 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=3 format=3]
 
 [ext_resource type="PackedScene" path="res://shared/room_template.tscn" id="1_template"]
+[ext_resource type="Script" path="res://floors/floor_2/abstract_room.gd" id="2_room"]
 
-[node name="BossRoomPlaceholder" instance=ExtResource("1_template")]
-room_size = Vector2(1280, 720)
-open_sides = Array[Vector2i]([Vector2i(-1, 0), Vector2i(1, 0)])
-
+[node name="BossRoom" instance=ExtResource("1_template")]
+script = ExtResource("2_room")
+room_size = Vector2(1760, 1040)
+open_sides = Array[Vector2i]([Vector2i(-1, 0), Vector2i(0, -1)])
+generate_rectangular_shell = false
+floor_color = Color(0.04, 0.018, 0.03, 1)
+wall_color = Color(0.10, 0.035, 0.065, 1)
+wall_trim_color = Color(0.95, 0.52, 0.7, 1)
+wall_thickness = 58.0
+door_gap = 320.0
+room_polygon = PackedVector2Array(-170, -520, 170, -520, 550, -450, 820, -250, 880, -80, 840, 220, 620, 450, 200, 510, -200, 490, -600, 430, -820, 220, -880, 150, -880, -150, -800, -300, -500, -470)
+accent_color = Color(1, 0.96, 0.98, 1)
+darkness = 0.83
+art_flip_h = true
+decor_seed = 42
+geometry_scale = 3.0
+pillar_centers = PackedVector2Array(0, 60)
+pillar_radii = PackedFloat32Array(85)

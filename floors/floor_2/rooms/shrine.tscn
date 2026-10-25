@@ -1,0 +1,23 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="PackedScene" path="res://shared/room_template.tscn" id="1_template"]
+[ext_resource type="Script" path="res://floors/floor_2/abstract_room.gd" id="2_room"]
+
+[node name="ShrineRoom" instance=ExtResource("1_template")]
+script = ExtResource("2_room")
+room_size = Vector2(1540, 900)
+open_sides = Array[Vector2i]([Vector2i(-1, 0), Vector2i(0, 1)])
+generate_rectangular_shell = false
+floor_color = Color(0.04, 0.02, 0.035, 1)
+wall_color = Color(0.095, 0.045, 0.075, 1)
+wall_trim_color = Color(0.94, 0.64, 0.8, 1)
+wall_thickness = 54.0
+door_gap = 300.0
+room_polygon = PackedVector2Array(-300, -450, 200, -430, 600, -320, 760, -120, 740, 180, 500, 350, 180, 450, -180, 450, -500, 380, -720, 200, -770, 150, -770, -150, -680, -300)
+accent_color = Color(1, 0.93, 0.97, 1)
+darkness = 0.86
+art_flip_h = true
+decor_seed = 104
+geometry_scale = 3.0
+pillar_centers = PackedVector2Array(0, 20)
+pillar_radii = PackedFloat32Array(70)

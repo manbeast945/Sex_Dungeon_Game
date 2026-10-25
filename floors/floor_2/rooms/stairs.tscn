@@ -1,8 +1,20 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=3 format=3]
 
 [ext_resource type="PackedScene" path="res://shared/room_template.tscn" id="1_template"]
+[ext_resource type="Script" path="res://floors/floor_2/abstract_room.gd" id="2_room"]
 
 [node name="StairsRoom" instance=ExtResource("1_template")]
-room_size = Vector2(1280, 720)
-open_sides = Array[Vector2i]([Vector2i(-1, 0)])
-
+script = ExtResource("2_room")
+room_size = Vector2(1320, 780)
+open_sides = Array[Vector2i]([Vector2i(0, -1)])
+generate_rectangular_shell = false
+floor_color = Color(0.02, 0.03, 0.04, 1)
+wall_color = Color(0.04, 0.075, 0.10, 1)
+wall_trim_color = Color(0.72, 0.88, 1, 1)
+wall_thickness = 50.0
+door_gap = 280.0
+room_polygon = PackedVector2Array(-140, -390, 140, -390, 440, -330, 620, -180, 650, 90, 470, 300, 130, 380, -180, 360, -520, 260, -650, 20, -570, -220, -380, -350)
+accent_color = Color(0.96, 0.98, 1, 1)
+darkness = 0.81
+decor_seed = 135
+geometry_scale = 3.0
