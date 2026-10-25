@@ -70,7 +70,8 @@ func _ensure_doorway_markers() -> void:
 		marker.rotation = _doorway_rotation(side)
 		var arrival := Marker2D.new()
 		arrival.name = "ArrivalPoint"
-		arrival.position = -_outward_direction(doorway_name) * (Vector2(absf(_outward_direction(doorway_name).x), absf(_outward_direction(doorway_name).y)) * room_size * 0.5 - Vector2.ONE * door_clearance)
+		var arrival_clearance := room_size.x * 0.5 - door_clearance if side.x != 0 else room_size.y * 0.5 - door_clearance
+		arrival.position = Vector2(-arrival_clearance, 0.0)
 		marker.add_child(arrival)
 		doorways.add_child(marker)
 
@@ -157,3 +158,5 @@ func _add_wall(rect: Rect2) -> void:
 		trim.size = Vector2(5.0, rect.size.y)
 	wall.add_child(trim)
 	add_child(wall)
+
+
