@@ -3,8 +3,11 @@ extends Node2D
 
 signal room_transition_requested(player_position: Vector2, camera_position: Vector2)
 signal next_floor_requested(floor_number: int)
+signal area_transition_requested(area_id: StringName)
 
 @export var entry_marker_path: NodePath = ^"EntryPoint"
+## Opt in per area. Existing teammates' floors retain manual door unlocking.
+@export var free_exploration := false
 
 var room_doorways: Array[Area2D] = []
 var room_door_barriers: Array[CollisionShape2D] = []

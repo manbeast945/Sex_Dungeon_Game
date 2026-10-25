@@ -4,9 +4,9 @@
 
 Each owner edits only their floor folder:
 
-- `floors/floor_1/` — teammate 1
-- `floors/floor_2/` — teammate 2
-- `floors/floor_3/` — you
+- `floors/floor_1/` — you
+- `floors/floor_2/` — teammate 1
+- `floors/floor_3/` — teammate 2
 
 A floor folder contains its floor scene and script plus a `rooms/` folder containing one `.tscn` per room. Keep floor-specific art, room nodes, and layout code in the same folder. Shared templates and transition code live under `shared/` and `scripts/`; change those on `main` and merge the update into each floor branch before using it.
 
@@ -24,6 +24,8 @@ A floor folder contains its floor scene and script plus a `rooms/` folder contai
 - Load room scenes from that floor's own `rooms/` folder with `add_room(scene, room_id, origin)`.
 - Connect adjacent rooms with `connect_rooms(room_a, &"East", room_b, &"West")` or the matching named exits. Keep room placement and connection lists in the floor's script.
 - Request the next floor with `next_floor_requested.emit(floor_number)` from that floor's stairs trigger. The shared manager owns floor loading and transition labels.
+- Areas can opt into `free_exploration = true` to reopen their doors automatically after travel. The default is `false`, preserving Floors 2 and 3's manual unlock behavior. The entrance and Floor 1 use free exploration.
+- `area_transition_requested.emit(area_id)` handles travel between the separate entrance and Floor 1. Leave this unused for ordinary room connections and numbered floor progression.
 
 ## AI prompt outline
 

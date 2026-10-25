@@ -6,8 +6,12 @@ const FLOOR_SCENES: Array[PackedScene] = [
 	preload("res://floors/floor_3/floor_3.tscn"),
 ]
 const PLAYER_SCENE: PackedScene = preload("res://scenes/player.tscn")
+const ENTRANCE_SCENE: PackedScene = preload("res://floors/floor_1/entrance.tscn")
 const TRANSITION_SECONDS := 0.38
 
+var current_area_id: StringName = &"entrance"
+var area_cache: Dictionary = {}
+var floor_one_seen := false
 var current_floor: DungeonFloor
 var player: TemporaryDungeonPlayer
 var camera: Camera2D
@@ -61,9 +65,7 @@ func _build_iris() -> void:
 	add_child(canvas)
 
 func _load_initial_floor() -> void:
-	current_floor = FLOOR_SCENES[0].instantiate() as DungeonFloor
-	_connect_floor_signals(current_floor)
-	add_child(current_floor)
+	_activate_area(&"entrance")
 	player.global_position = current_floor.get_entry_position()
 	camera.global_position = current_floor.get_entry_position()
 	current_floor.set_room_doors_enabled(true)
@@ -72,6 +74,27 @@ func _load_initial_floor() -> void:
 func _connect_floor_signals(floor: DungeonFloor) -> void:
 	floor.room_transition_requested.connect(_on_room_transition_requested)
 	floor.next_floor_requested.connect(_on_next_floor_requested)
+	floor.area_transition_requested.connect(_on_area_transition_requested)
+
+func _activate_area(area_id: StringName) -> void:
+	if current_floor != null:
+		current_floor.set_room_doors_enabled(false)
+		current_floor.hide()
+		# Disabled CollisionObject2D descendants leave the physics world.
+		current_floor.process_mode = Node.PROCESS_MODE_DISABLED
+	if not area_cache.has(area_id):
+		var scene: PackedScene = ENTRANCE_SCENE
+		if area_id != &"entrance":
+			var index := int(String(area_id).trim_prefix("floor_")) - 1
+			scene = FLOOR_SCENES[index]
+		var area := scene.instantiate() as DungeonFloor
+		_connect_floor_signals(area)
+		area_cache[area_id] = area
+		add_child(area)
+	current_floor = area_cache[area_id] as DungeonFloor
+	current_area_id = area_id
+	current_floor.process_mode = Node.PROCESS_MODE_INHERIT
+	current_floor.show()
 
 func _on_room_transition_requested(player_position: Vector2, camera_position: Vector2) -> void:
 	if transition_running or doors_locked:
@@ -82,39 +105,57 @@ func _transition_within_floor(player_position: Vector2, camera_position: Vector2
 	transition_running = true
 	_lock_current_floor_doors()
 	player.set_movement_enabled(false)
-	player.velocity = Vector2.ZERO
 	await _animate_iris(0.0)
 	player.global_position = player_position
-	player.velocity = Vector2.ZERO
 	camera.global_position = camera_position
 	await _animate_iris(2.0)
-	player.set_movement_enabled(true)
-	transition_running = false
+	_finish_transition()
+
+func _on_area_transition_requested(area_id: StringName) -> void:
+	if transition_running or doors_locked:
+		return
+	if not ((current_area_id == &"entrance" and area_id == &"floor_1") or (current_area_id == &"floor_1" and area_id == &"entrance")):
+		return
+	var title := "Floor 1" if area_id == &"floor_1" and not floor_one_seen else ""
+	_transition_to_area(area_id, title)
 
 func _on_next_floor_requested(floor_number: int) -> void:
 	if transition_running or floor_number < 1 or floor_number > FLOOR_SCENES.size():
 		return
-	_transition_to_floor(FLOOR_SCENES[floor_number - 1], "Floor %d" % floor_number)
+	_transition_to_area(StringName("floor_%d" % floor_number), "Floor %d" % floor_number)
 
-func _transition_to_floor(next_floor_scene: PackedScene, floor_name: String) -> void:
+func _transition_to_area(area_id: StringName, title: String) -> void:
 	transition_running = true
 	_lock_current_floor_doors()
 	player.set_movement_enabled(false)
-	player.velocity = Vector2.ZERO
 	await _animate_iris(0.0)
-	floor_transition_label.text = floor_name
-	floor_transition_label.visible = true
-	await get_tree().create_timer(0.65).timeout
-	current_floor.queue_free()
-	current_floor = next_floor_scene.instantiate() as DungeonFloor
-	_connect_floor_signals(current_floor)
-	add_child(current_floor)
-	player.global_position = current_floor.get_entry_position()
-	player.velocity = Vector2.ZERO
-	camera.global_position = current_floor.get_entry_position()
+	if not title.is_empty():
+		floor_transition_label.text = title
+		floor_transition_label.visible = true
+		await get_tree().create_timer(0.65).timeout
+	_activate_area(area_id)
+	if area_id == &"entrance":
+		var room := current_floor.rooms[&"EntranceRoom"] as DungeonRoom
+		player.global_position = room.get_arrival_position(&"East")
+		camera.global_position = room.get_camera_position()
+	elif area_id == &"floor_1":
+		var room := current_floor.rooms[&"A"] as DungeonRoom
+		player.global_position = room.get_arrival_position(&"West")
+		camera.global_position = room.get_camera_position()
+		floor_one_seen = true
+	else:
+		player.global_position = current_floor.get_entry_position()
+		camera.global_position = current_floor.get_entry_position()
 	current_floor.set_room_doors_enabled(false)
+	player.velocity = Vector2.ZERO
 	floor_transition_label.visible = false
 	await _animate_iris(2.0)
+	_finish_transition()
+
+func _finish_transition() -> void:
+	if current_floor.free_exploration:
+		doors_locked = false
+		current_floor.set_room_doors_enabled(true)
 	player.set_movement_enabled(true)
 	transition_running = false
 

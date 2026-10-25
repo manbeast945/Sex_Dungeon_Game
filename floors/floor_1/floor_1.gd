@@ -1,42 +1,52 @@
 extends DungeonFloor
-
-const STARTER_ROOM: PackedScene = preload("res://floors/floor_1/rooms/starter.tscn")
-const BOSS_ROOM: PackedScene = preload("res://floors/floor_1/rooms/boss.tscn")
-const STAIRS_ROOM: PackedScene = preload("res://floors/floor_1/rooms/stairs.tscn")
-const STARTER_ORIGIN := Vector2.ZERO
-const BOSS_ORIGIN := Vector2(1280.0, 0.0)
-const STAIRS_ORIGIN := Vector2(2560.0, 0.0)
+## Fixed graph: A-B-C-G-H, B-D-E-C loop, and C-F side branch.
+const ROOM_SCENES := {
+	&"A": preload("res://floors/floor_1/rooms/starter.tscn"),
+	&"B": preload("res://floors/floor_1/rooms/root_hall.tscn"),
+	&"C": preload("res://floors/floor_1/rooms/moss_junction.tscn"),
+	&"D": preload("res://floors/floor_1/rooms/spring_grotto.tscn"),
+	&"E": preload("res://floors/floor_1/rooms/fern_chamber.tscn"),
+	&"F": preload("res://floors/floor_1/rooms/stone_alcove.tscn"),
+	&"G": preload("res://floors/floor_1/rooms/deep_cavern.tscn"),
+	&"H": preload("res://floors/floor_1/rooms/descent_chamber.tscn"),
+}
+const GRID := {
+	&"A": Vector2i(0, 0), &"B": Vector2i(1, 0), &"C": Vector2i(2, 0),
+	&"D": Vector2i(1, -1), &"E": Vector2i(2, -1), &"F": Vector2i(2, 1),
+	&"G": Vector2i(3, 0), &"H": Vector2i(4, 0),
+}
+const CONNECTIONS := [
+	[&"A", &"East", &"B", &"West"], [&"B", &"East", &"C", &"West"],
+	[&"B", &"North", &"D", &"South"], [&"D", &"East", &"E", &"West"],
+	[&"E", &"South", &"C", &"North"], [&"C", &"South", &"F", &"North"],
+	[&"C", &"East", &"G", &"West"], [&"G", &"East", &"H", &"West"],
+]
 
 func _ready() -> void:
-	var starter := add_room(STARTER_ROOM, &"StarterRoom", STARTER_ORIGIN)
-	var boss := add_room(BOSS_ROOM, &"BossRoomPlaceholder", BOSS_ORIGIN)
-	var stairs := add_room(STAIRS_ROOM, &"StairsRoom", STAIRS_ORIGIN)
-	connect_rooms(starter, &"East", boss, &"West")
-	connect_rooms(boss, &"East", stairs, &"West")
-	_add_stairs_visuals(STAIRS_ORIGIN)
-	_add_next_floor_trigger(STAIRS_ORIGIN, 2)
+	for room_id in ROOM_SCENES:
+		add_room(ROOM_SCENES[room_id], room_id, Vector2(GRID[room_id]) * Vector2(1280, 720))
+	for edge in CONNECTIONS:
+		connect_rooms(rooms[edge[0]], edge[1], rooms[edge[2]], edge[3])
+	_add_trigger("ReturnToEntrance", Vector2(-580, 0), Vector2(88, 128), _return_to_entrance)
+	# Stairs are well inside H, separated from the western arrival point.
+	_add_trigger("NextFloorTrigger", Vector2(5120 + 256, 0), Vector2(96, 96), _descend)
 
-func _add_stairs_visuals(origin: Vector2) -> void:
-	for step_index in range(6):
-		var step := ColorRect.new()
-		step.name = "StairStep_%d" % step_index
-		step.position = origin + Vector2(-150.0 + step_index * 30.0, 90.0 - step_index * 30.0)
-		step.size = Vector2(300.0 - step_index * 40.0, 24.0)
-		step.color = Color("#92704d") if step_index % 2 == 0 else Color("#b8875b")
-		add_child(step)
-
-func _add_next_floor_trigger(origin: Vector2, floor_number: int) -> void:
-	var trigger := Area2D.new()
-	trigger.name = "NextFloorTrigger"
-	trigger.position = origin
+func _add_trigger(trigger_name: String, at: Vector2, size: Vector2, callback: Callable) -> void:
+	var area := Area2D.new()
+	area.name = trigger_name
+	area.position = at
 	var collision := CollisionShape2D.new()
 	var shape := RectangleShape2D.new()
-	shape.size = Vector2(320.0, 240.0)
+	shape.size = size
 	collision.shape = shape
-	trigger.add_child(collision)
-	trigger.body_entered.connect(_on_next_floor_body_entered.bind(floor_number))
-	add_child(trigger)
+	area.add_child(collision)
+	area.body_entered.connect(callback)
+	add_child(area)
 
-func _on_next_floor_body_entered(body: Node2D, floor_number: int) -> void:
+func _return_to_entrance(body: Node2D) -> void:
 	if body.is_in_group("player"):
-		next_floor_requested.emit(floor_number)
+		area_transition_requested.emit(&"entrance")
+
+func _descend(body: Node2D) -> void:
+	if body.is_in_group("player"):
+		next_floor_requested.emit(2)
